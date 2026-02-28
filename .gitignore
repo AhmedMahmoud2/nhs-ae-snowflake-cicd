@@ -1,0 +1,9 @@
+# secrets / local
+.env
+*.pem
+*.key
+*.p8
+
+# python
+__pycache__/
+.venv/

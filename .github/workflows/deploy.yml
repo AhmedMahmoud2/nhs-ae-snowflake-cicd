@@ -1,0 +1,40 @@
+name: Deploy Snowflake Migrations
+
+on:
+  push:
+    branches: [ DEV, UAT, PROD ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # Branch name matches GitHub Environment name (DEV/UAT/PROD)
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install schemachange
+        run: pip install schemachange
+
+      - name: Write private key
+        run: |
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > /tmp/snowflake_key.pem
+          chmod 600 /tmp/snowflake_key.pem
+
+      - name: Deploy migrations (passwordless)
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        run: |
+          schemachange deploy             -f migrations             -a "$SNOWFLAKE_ACCOUNT"             -u "$SNOWFLAKE_USER"             -r "$SNOWFLAKE_ROLE"             -w "$SNOWFLAKE_WAREHOUSE"             -d "$SNOWFLAKE_DATABASE"             -c "$SNOWFLAKE_SCHEMA"             --create-change-history-table             --private-key-path /tmp/snowflake_key.pem
