@@ -1,4 +1,4 @@
--- V003__generate_dummy_raw_data.sql
+-- V002__generate_dummy_raw_data.sql
 USE DATABASE IDENTIFIER($SNOWFLAKE_DATABASE);
 USE SCHEMA IDENTIFIER($SNOWFLAKE_SCHEMA);
 
