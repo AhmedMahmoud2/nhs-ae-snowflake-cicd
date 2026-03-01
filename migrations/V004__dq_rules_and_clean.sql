@@ -1,4 +1,4 @@
--- V004__dq_rules_and_clean.sql
+-- V003__dq_rules_and_clean.sql
 USE DATABASE IDENTIFIER($SNOWFLAKE_DATABASE);
 USE SCHEMA IDENTIFIER($SNOWFLAKE_SCHEMA);
 
