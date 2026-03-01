@@ -28,7 +28,7 @@ jobs:
           echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > /tmp/snowflake_key.pem
           chmod 600 /tmp/snowflake_key.pem
 
-            - name: Deploy migrations (passwordless)
+      - name: Deploy migrations (passwordless)
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
