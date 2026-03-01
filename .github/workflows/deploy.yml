@@ -40,4 +40,5 @@ jobs:
         run: |
           schemachange deploy \
             -f migrations \
+            --change-history-table "${SNOWFLAKE_DATABASE}.${SNOWFLAKE_SCHEMA}.SCHEMACHANGE_CHANGE_HISTORY" \
             --create-change-history-table
