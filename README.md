@@ -1,5 +1,7 @@
 # Snowflake CI/CD – NHS A&E Dummy Data (DEV → UAT → PROD)
 
+Deployment trigger: DEV
+
 Enterprise-style CI/CD demo for Snowflake using:
 - **Git branches**: `DEV` → `UAT` → `PROD`
 - **GitHub Environments**: `DEV`, `UAT`, `PROD` (secrets + approvals)
