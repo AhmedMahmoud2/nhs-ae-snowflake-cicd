@@ -28,7 +28,7 @@ jobs:
           echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > /tmp/snowflake_key.pem
           chmod 600 /tmp/snowflake_key.pem
 
-      - name: Deploy migrations (passwordless)
+            - name: Deploy migrations (passwordless)
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -36,5 +36,8 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: /tmp/snowflake_key.pem
         run: |
-          schemachange deploy             -f migrations             -a "$SNOWFLAKE_ACCOUNT"             -u "$SNOWFLAKE_USER"             -r "$SNOWFLAKE_ROLE"             -w "$SNOWFLAKE_WAREHOUSE"             -d "$SNOWFLAKE_DATABASE"             -c "$SNOWFLAKE_SCHEMA"             --create-change-history-table             --private-key-path /tmp/snowflake_key.pem
+          schemachange deploy \
+            -f migrations \
+            --create-change-history-table
