@@ -15,6 +15,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Debug ref
+        run: |
+          echo "github.ref=${{ github.ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.base_ref=${{ github.base_ref }}"
+          git rev-parse --abbrev-ref HEAD
+          git rev-parse HEAD
+          git log -1 --oneline
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,10 +36,47 @@ jobs:
         run: |
           pip install sqlfluff==3.0.7
 
-      - name: SQLFluff lint (Snowflake)
+      - name: Determine changed SQL files
+        id: changed_sql
         run: |
-          sqlfluff lint migrations --dialect snowflake
+          set -e
+          echo "Fetching base branch: ${{ github.base_ref }}"
+          git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}"
 
-      - name: Guardrails - block destructive SQL
+          CHANGED_SQL=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- 'migrations/*.sql' || true)
+
+          echo "Changed SQL files:"
+          echo "$CHANGED_SQL"
+
+          # Write output for later steps
+          {
+            echo "files<<EOF"
+            echo "$CHANGED_SQL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: SQLFluff lint (only changed files)
         run: |
-          python .github/scripts/sql_guard.py migrations
+          FILES="${{ steps.changed_sql.outputs.files }}"
+
+          if [ -z "$FILES" ]; then
+            echo "No SQL files changed in migrations/. Skipping sqlfluff."
+            exit 0
+          fi
+
+          # shellcheck disable=SC2086
+          sqlfluff lint $FILES --dialect snowflake
+
+      - name: Guardrails - block destructive SQL (only changed files)
+        run: |
+          FILES="${{ steps.changed_sql.outputs.files }}"
+
+          if [ -z "$FILES" ]; then
+            echo "No SQL files changed in migrations/. Skipping guardrails."
+            exit 0
+          fi
+
+          # If your sql_guard.py accepts multiple file paths, this is perfect:
+          # python .github/scripts/sql_guard.py <file1> <file2> ...
+          # shellcheck disable=SC2086
+          python .github/scripts/sql_guard.py $FILES
