@@ -14,14 +14,22 @@ BLOCK_PATTERNS = [
     (re.compile(r"\bCREATE\s+OR\s+REPLACE\s+SCHEMA\b", re.IGNORECASE), "CREATE OR REPLACE SCHEMA"),
 ]
 
-ALLOW_OVERRIDE_TOKEN = re.compile(r"^\s*--\s*allow-destructive\s*$", re.IGNORECASE | re.MULTILINE)
+# Exact line token:  -- allow-destructive
+ALLOW_OVERRIDE_TOKEN = re.compile(
+    r"^\s*--\s*allow-destructive\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 def strip_sql_comments(sql: str) -> str:
+    """Remove line and block comments for pattern scanning."""
     sql = re.sub(r"--.*?$", "", sql, flags=re.MULTILINE)
     sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
     return sql
 
+
 def scan_file(path: Path) -> list[str]:
+    """Return list of issues found in a SQL file. Empty list means pass."""
     raw = path.read_text(encoding="utf-8", errors="ignore")
 
     # Allow explicit override for exceptional cases
@@ -29,8 +37,9 @@ def scan_file(path: Path) -> list[str]:
         return []
 
     sql = strip_sql_comments(raw)
-    issues = []
+    issues: list[str] = []
 
+    # Destructive patterns
     for pattern, label in BLOCK_PATTERNS:
         if pattern.search(sql):
             issues.append(f"{label} detected")
@@ -46,24 +55,53 @@ def scan_file(path: Path) -> list[str]:
 
     return issues
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: sql_guard.py <folder>")
-        sys.exit(2)
 
-    folder = Path(sys.argv[1])
-    if not folder.exists():
-        print(f"Folder not found: {folder}")
-        sys.exit(2)
+def iter_sql_files(target: Path) -> list[Path]:
+    """Return a list of .sql files for a file or directory target."""
+    if not target.exists():
+        return []
 
-    failures = []
-    for root, _, files in os.walk(folder):
+    if target.is_file():
+        return [target] if target.suffix.lower() == ".sql" else []
+
+    sql_files: list[Path] = []
+    for root, _, files in os.walk(target):
         for f in files:
             if f.lower().endswith(".sql"):
-                path = Path(root) / f
-                issues = scan_file(path)
-                if issues:
-                    failures.append((path, issues))
+                sql_files.append(Path(root) / f)
+
+    return sorted(sql_files)
+
+
+def main() -> None:
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  sql_guard.py <folder>")
+        print("  sql_guard.py <file1.sql> <file2.sql> ...")
+        sys.exit(2)
+
+    args = [Path(a) for a in sys.argv[1:]]
+    sql_files: list[Path] = []
+
+    for a in args:
+        sql_files.extend(iter_sql_files(a))
+
+    # De-duplicate while preserving sort order
+    sql_files = sorted(set(sql_files))
+
+    if not sql_files:
+        # If user passed files/dirs but none resolved to SQL, treat as misuse
+        print("No .sql files found for the provided path(s):")
+        for a in args:
+            print(f"  - {a}")
+        sys.exit(2)
+
+    failures: list[tuple[Path, list[str]]] = []
+
+    for path in sql_files:
+        issues = scan_file(path)
+        if issues:
+            failures.append((path, issues))
 
     if failures:
         print("\n❌ Destructive SQL guardrails failed:\n")
@@ -71,8 +109,15 @@ def main():
             print(f"- {path}")
             for issue in issues:
                 print(f"  • {issue}")
-            print("  → To override intentionally, add: -- allow-destructive\n")
+            print("  → To override intentionally, add a line anywhere in the file:")
+            print("    -- allow-destructive\n")
         sys.exit(1)
+
+    print(f"✅ Guardrails passed ({len(sql_files)} SQL file(s) scanned).")
+
+
+if __name__ == "__main__":
+    main()
 
     print("✅ Guardrails passed (no destructive SQL detected).")
 
