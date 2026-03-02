@@ -118,8 +118,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-    print("✅ Guardrails passed (no destructive SQL detected).")
-
-if __name__ == "__main__":
-    main()
