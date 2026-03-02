@@ -1,6 +1,6 @@
 -- V002__generate_dummy_raw_data.sql
 
-
+-- allow-destructive
 TRUNCATE TABLE AE_ATTENDANCE_RAW;
 
 INSERT INTO AE_ATTENDANCE_RAW (
