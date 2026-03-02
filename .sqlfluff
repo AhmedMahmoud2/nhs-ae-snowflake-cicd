@@ -1,13 +1,12 @@
 [sqlfluff]
 dialect = snowflake
 templater = raw
-exclude_rules = L009
-
-[sqlfluff:rules]
 max_line_length = 120
+
+exclude_rules = L009
 
 [sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
 
 [sqlfluff:rules:capitalisation.identifiers]
-capitalisation_policy = consistent
+capitalisation_policy = upper
